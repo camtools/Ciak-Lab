@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIAKLAB · Slate Designer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#0b0b0d; --panel:#141417; --panel-2:#1b1b20;
+  --line:#2a2a31; --line-2:#34343c;
+  --txt:#ECECEE; --muted:#8A8A93; --faint:#5e5e66;
+  --accent:#F2A23B; --accent-p:#d98a26;
+  --r:14px;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:var(--ui);min-height:100vh;
+  -webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;}
+
+/* ── header ── */
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px;
+  padding:14px 20px;background:rgba(11,11,13,.85);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto;}
+.mark{width:30px;height:30px;border-radius:7px;flex:0 0 auto;
+  background:repeating-linear-gradient(125deg,#0b0b0d 0 7px,#fff 7px 14px);
+  border:1px solid #000;}
+.brand h1{font-size:15px;letter-spacing:.16em;font-weight:700;margin:0;}
+.brand h1 b{color:var(--accent);}
+.brand span{display:block;font-size:10.5px;letter-spacing:.22em;color:var(--muted);
+  text-transform:uppercase;margin-top:1px;}
+button{font-family:inherit;cursor:pointer;}
+.btn{border:1px solid var(--line-2);background:var(--panel-2);color:var(--txt);
+  padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:border-color .15s,background .15s,transform .05s;}
+.btn:hover{border-color:#45454f;}
+.btn:active{transform:translateY(1px);}
+.btn-acc{background:var(--accent);color:#1a1206;border-color:var(--accent);}
+.btn-acc:hover{background:var(--accent-p);border-color:var(--accent-p);}
+.ic{font-size:14px;line-height:1;}
+
+/* ── layout ── */
+main{max-width:1180px;margin:0 auto;padding:26px 20px 80px;}
+@media(min-width:980px){main{display:grid;grid-template-columns:1fr 360px;gap:30px;align-items:start;}}
+@media(min-width:1500px){main{max-width:min(94vw,1900px);grid-template-columns:1fr 380px;}}
+
+/* ── stage ── */
+.stage-wrap{min-width:0;}
+.frameline{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;}
+.frameline .idx{font-size:13px;letter-spacing:.18em;color:var(--accent);font-weight:700;}
+.frameline .nm{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.canvas-host{display:flex;justify-content:center;align-items:flex-start;}
+canvas{display:block;max-width:100%;height:auto;border-radius:2px;}
+
+/* ── panel ── */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;margin-top:30px;}
+@media(min-width:980px){.panel{margin-top:30px;position:sticky;top:114px;max-height:calc(100vh - 138px);overflow-y:auto;}}
+.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px;}
+.ctrl>span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;overflow:hidden;}
+.seg button{border:none;background:transparent;color:var(--muted);
+  padding:7px 13px;font-size:12.5px;font-weight:600;transition:background .15s,color .15s;}
+.seg button.on{background:var(--accent);color:#1a1206;}
+select{background:var(--panel-2);border:1px solid var(--line-2);color:var(--txt);
+  border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:inherit;font-weight:600;}
+select:focus{outline:none;border-color:var(--accent);}
+.div{height:1px;background:var(--line);margin:18px 0 16px;}
+
+/* ── image import ── */
+.sec-lbl{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+  display:block;margin-bottom:10px;}
+.img-drop{position:relative;border:1.5px dashed var(--line-2);border-radius:10px;
+  padding:13px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;
+  transition:border-color .15s,background .15s;overflow:hidden;}
+.img-drop:hover{border-color:var(--accent);background:rgba(242,162,59,.04);}
+.img-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.img-drop .di{font-size:20px;flex:0 0 auto;line-height:1;}
+.img-drop .dt b{display:block;font-size:12.5px;color:var(--txt);font-weight:600;}
+.img-drop .dt small{font-size:10.5px;color:var(--faint);}
+.img-drop.loaded{border-color:var(--accent);border-style:solid;}
+.img-acts{display:none;gap:8px;margin-top:8px;}
+.img-acts.vis{display:flex;}
+.btn-sm{border:1px solid var(--line-2);background:transparent;color:var(--muted);
+  padding:6px 11px;border-radius:8px;font-size:11.5px;font-weight:600;
+  transition:border-color .15s,color .15s;}
+.btn-sm:hover{color:var(--txt);border-color:#45454f;}
+.btn-del{border-color:rgba(255,90,90,.3);color:#ff6b6b;}
+.btn-del:hover{background:rgba(255,90,90,.08);border-color:rgba(255,90,90,.5);}
+
+/* ── sliders ── */
+.sld{margin-bottom:14px;}
+.sld-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.sld-row span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.sld-row b{font-size:11.5px;color:var(--txt);font-weight:600;}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;
+  background:var(--line-2);accent-color:var(--accent);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
+  border-radius:50%;background:var(--accent);cursor:pointer;border:none;}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:none;}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark"></div>
+    <div><h1>CIAK<b>LAB</b></h1><span>Slate Designer</span></div>
+  </div>
+  <button class="btn btn-acc" id="exportBtn"><span class="ic">↧</span> Esporta PDF</button>
+</header>
+
+<main>
+  <section class="stage-wrap">
+    <div class="frameline">
+      <span class="idx">01 / 01</span>
+      <span class="nm">Layout Classico</span>
+    </div>
+    <div class="canvas-host"><canvas id="slate"></canvas></div>
+  </section>
+
+  <aside class="panel">
+    <div class="ctrl">
+      <span>Tema</span>
+      <div class="seg" id="themeSeg">
+        <button data-t="dark">Scuro</button>
+        <button data-t="light" class="on">Chiaro</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <span>Font</span>
+      <select id="fontSel">
+        <option value="sans">Sans · Helvetica</option>
+        <option value="serif">Serif · Times</option>
+        <option value="mono">Mono · Courier</option>
+        <option value="arialblack">Arial Black</option>
+        <option value="impact">Impact</option>
+        <option value="helveticacond">Helvetica Condensed</option>
+        <option value="futura">Futura / Geometrico</option>
+      </select>
+    </div>
+    <div class="sld">
+      <div class="sld-row"><span>Dimensione testo</span><b id="fontSizeVal">0%</b></div>
+      <input type="range" id="fontSizeRange" min="0" max="100" step="1" value="0">
+    </div>
+
+    <div class="div"></div>
+
+    <!-- Image import -->
+    <span class="sec-lbl">Immagine</span>
+    <div class="img-drop" id="imgDrop">
+      <input type="file" id="imgInput" accept="image/jpeg,image/png,image/tiff,image/webp,application/pdf">
+      <span class="di">🖼</span>
+      <div class="dt">
+        <b id="imgLabel">Importa immagine</b>
+        <small id="imgSub">JPEG · PNG · TIFF · PDF</small>
+      </div>
+    </div>
+    <div class="img-acts" id="imgActs">
+      <button class="btn-sm btn-del" id="imgRemove">✕ Rimuovi</button>
+    </div>
+
+    <div class="ctrl" style="margin-top:14px;">
+      <span>Adatta</span>
+      <div class="seg" id="fitSeg">
+        <button data-f="cover" class="on">Riempi</button>
+        <button data-f="contain">Intera</button>
+      </div>
+    </div>
+    <div class="sld">
+      <div class="sld-row"><span>Zoom</span><b id="zoomVal">100%</b></div>
+      <input type="range" id="zoomRange" min="50" max="300" step="5" value="100">
+    </div>
+    <div class="sld">
+      <div class="sld-row"><span>Posizione orizzontale</span><b id="posXVal">0</b></div>
+      <input type="range" id="posXRange" min="-50" max="50" step="1" value="0">
+    </div>
+    <div class="sld">
+      <div class="sld-row"><span>Posizione verticale</span><b id="posYVal">0</b></div>
+      <input type="range" id="posYRange" min="-50" max="50" step="1" value="0">
+    </div>
+  </aside>
+</main>
+
+<script>
+/* ══════════════════════════════════════════════
+   COSTANTI  (tutte in mm)
+   Derivate dal SVG: viewBox 0 0 3520 2268
+   scala = 3519.685 / 298 = 11.8125 px/mm
+   ══════════════════════════════════════════════ */
+var BW = 298, BH = 192;   // body
+var IH = 100;              // altezza zona immagine (rect rosso SVG: h=1181/11.8125)
+var CH = 30;               // altezza battuta in anteprima
+
+/* confini colonne (SVG: x=1175→99.47mm, x=2347→198.70mm) */
+var CX = [0, 99.47, 198.70, 298];
+
+/* confini righe (SVG: y=1181→100mm, y=1299→110mm, y=2008→170mm) */
+var RY = [100, 110, 170, 192];
+
+/* celle griglia [riga][colonna] */
+var CELLS = [
+  [ {k:'scn0',l:'SCENA'},          {k:'inq0',l:'INQ.'},           {k:'tk0',l:'TAKE'} ],
+  [ {k:'scn', l:'',big:1},    {k:'inq',l:'',big:1},      {k:'tk',l:'',big:1}  ],
+  [ {k:'data',l:'DATA',lock:1},    {k:'ie', l:'INT / EST',lock:1},{k:'gn',l:'',lock:1} ]
+];
+
+var LW = 0.353; /* spessore linee mm (SVG: 4.17px / 11.8125) */
+var LBL_GAP = (RY[1]-RY[0])/2; /* distanza delle etichette dalla riga sopra: stessa di Scena/Inq./Take */
+
+/* ══════════════════════════════════════════════
+   STATO
+   ══════════════════════════════════════════════ */
+var themeKey = 'light';
+var fontKey  = 'sans';
+var fontScale= 2;       /* moltiplicatore dimensione testo: slider 0-100, 0=ex 40%, 100=ex 85% */
+var imgFit   = 'cover'; /* 'cover' = riempie e taglia, 'contain' = intera, sfondo bianco */
+var imgZoom  = 1;       /* zoom manuale sull'immagine */
+var imgPosX  = 0;       /* spostamento orizzontale, % della larghezza riquadro */
+var imgPosY  = 0;       /* spostamento verticale, % dell'altezza riquadro */
+var imported = null;   /* {img:HTMLImageElement} */
+var vals = {};
+CELLS.forEach(function(row){ row.forEach(function(c){ vals[c.k] = c.v||''; }); });
+
+/* ══════════════════════════════════════════════
+   TEMI E FONT
+   ══════════════════════════════════════════════ */
+var TH = {
+  dark:  {bg:'#0a0a0a', ink:'#ffffff'},
+  light: {bg:'#ffffff', ink:'#000000'}
+};
+var FN = {
+  sans:         {pdf:'helvetica',ps:'normal', css:'-apple-system,"Helvetica Neue",Arial,sans-serif'},
+  serif:        {pdf:'times',    ps:'normal', css:'"Times New Roman",Times,serif'},
+  mono:         {pdf:'courier',  ps:'normal', css:'"Courier New",Courier,monospace'},
+  arialblack:   {pdf:'helvetica',ps:'bold',   css:'"Arial Black",Arial,sans-serif'},
+  impact:       {pdf:'helvetica',ps:'bold',   css:'Impact,Charcoal,sans-serif'},
+  helveticacond:{pdf:'helvetica',ps:'normal', css:'"Arial Narrow","Helvetica Neue",Arial,sans-serif'},
+  futura:       {pdf:'helvetica',ps:'normal', css:'Futura,"Trebuchet MS",Arial,sans-serif'}
+};
+
+/* ══════════════════════════════════════════════
+   CANVAS PAINTER
+   ══════════════════════════════════════════════ */
+function CP(ctx,s,ox,oy){ this.c=ctx; this.s=s; this.ox=ox; this.oy=oy; }
+CP.prototype.X=function(mm){ return this.ox+mm*this.s; };
+CP.prototype.Y=function(mm){ return this.oy+mm*this.s; };
+CP.prototype.fillRect=function(x,y,w,h,col){
+  this.c.fillStyle=col; this.c.fillRect(this.X(x),this.Y(y),w*this.s,h*this.s);
+};
+CP.prototype.setStroke=function(col,wmm){
+  this.c.strokeStyle=col; this.c.lineWidth=Math.max(0.5,wmm*this.s);
+};
+CP.prototype.line=function(x1,y1,x2,y2){
+  var c=this.c; c.beginPath(); c.moveTo(this.X(x1),this.Y(y1)); c.lineTo(this.X(x2),this.Y(y2)); c.stroke();
+};
+CP.prototype.text=function(str,x,y,o){
+  if(!str) return;
+  var sc=o.noScale?1:fontScale;
+  var px=o.sz*sc*0.352777*this.s;
+  this.c.font=(o.bold?'700 ':'400 ')+px+'px '+FN[fontKey].css;
+  this.c.fillStyle=o.col; this.c.textAlign=o.al||'left'; this.c.textBaseline=o.bl||'alphabetic';
+  this.c.fillText(str,this.X(x),this.Y(y));
+};
+/* calcola dw/dh/dx/dy dell'immagine dentro un riquadro cw×ch, dato fit base + zoom/pan manuali */
+function computeDraw(img,fit,zoom,posX,posY,cw,ch){
+  var fitScale = fit==='cover' ? Math.max(cw/img.width,ch/img.height) : Math.min(cw/img.width,ch/img.height);
+  var scale=fitScale*zoom;
+  var dw=img.width*scale, dh=img.height*scale;
+  return {
+    dw:dw, dh:dh,
+    dx:(cw-dw)/2 + (posX/100)*cw,
+    dy:(ch-dh)/2 + (posY/100)*ch
+  };
+}
+CP.prototype.drawImg=function(x,y,w,h){
+  if(!imported) return;
+  var img=imported.img;
+  var cw=w*this.s, ch=h*this.s, cx=this.X(x), cy=this.Y(y);
+  this.c.save();
+  this.c.fillStyle='#ffffff'; this.c.fillRect(cx,cy,cw,ch);
+  this.c.beginPath(); this.c.rect(cx,cy,cw,ch); this.c.clip();
+  var d=computeDraw(img,imgFit,imgZoom,imgPosX,imgPosY,cw,ch);
+  this.c.drawImage(img, cx+d.dx, cy+d.dy, d.dw, d.dh);
+  this.c.restore();
+};
+
+/* ══════════════════════════════════════════════
+   PDF PAINTER
+   ══════════════════════════════════════════════ */
+function PP(doc){ this.d=doc; }
+function hr(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+PP.prototype.fillRect=function(x,y,w,h,col){
+  var r=hr(col); this.d.setFillColor(r[0],r[1],r[2]); this.d.rect(x,y,w,h,'F');
+};
+PP.prototype.setStroke=function(col,wmm){
+  var r=hr(col); this.d.setDrawColor(r[0],r[1],r[2]); this.d.setLineWidth(wmm);
+};
+PP.prototype.line=function(x1,y1,x2,y2){ this.d.line(x1,y1,x2,y2); };
+PP.prototype.text=function(str,x,y,o){
+  if(!str) return;
+  var r=hr(o.col); this.d.setTextColor(r[0],r[1],r[2]);
+  var f=FN[fontKey];
+  this.d.setFont(f.pdf, o.bold?(f.ps==='bold'?'bold':'bold'):(f.ps==='bold'?'bold':'normal'));
+  this.d.setFontSize(o.sz*(o.noScale?1:fontScale));
+  this.d.text(str,x,y,{align:o.al||'left',baseline:o.bl||'alphabetic'});
+};
+PP.prototype.drawImg=function(x,y,w,h){
+  if(!imported) return;
+  this.d.setFillColor(255,255,255); this.d.rect(x,y,w,h,'F');
+  this.d.addImage(makeFitUrl(imported.img,imgFit,imgZoom,imgPosX,imgPosY),'JPEG',x,y,w,h);
+};
+
+/* ══════════════════════════════════════════════
+   DRAW BODY  (comune canvas + PDF)
+   ══════════════════════════════════════════════ */
+function drawBody(p, th){
+  /* sfondo */
+  p.fillRect(0,0,BW,BH,th.bg);
+
+  /* zona immagine */
+  if(imported){
+    p.drawImg(0,0,BW,IH);
+  } else {
+    p.fillRect(0,0,BW,IH,'#F2A23B');
+    p.text('IMMAGINE (29,8x10cm)', BW/2, IH/2,
+      {sz:13, bold:true, col:'#1a1206', al:'center', bl:'middle'});
+  }
+
+  /* linee griglia (fedele all'SVG) */
+  p.setStroke(th.ink, LW);
+  /* orizzontali: y=100, 110, 170 — no bordo esterno */
+  RY.slice(0,-1).forEach(function(y){ p.line(0,y,BW,y); });
+  /* verticali: x=99.47, x=198.70 — da y=100 a y=192 */
+  [CX[1],CX[2]].forEach(function(x){ p.line(x,RY[0],x,BH); });
+
+  /* contenuto celle */
+  CELLS.forEach(function(row,ri){
+    var cy=RY[ri], ch=RY[ri+1]-RY[ri];
+    row.forEach(function(cell,ci){
+      drawCell(p, cell, CX[ci], cy, CX[ci+1]-CX[ci], ch, th);
+    });
+  });
+}
+
+function drawCell(p, cell, cx, cy, cw, ch, th){
+  var pad=2.4;
+  /* dimensioni font per riga */
+  var lsz, vsz, bsz;
+  if(ch<=12){        /* riga 0 h=10mm  */
+    lsz=5.5; vsz=7.5;
+  } else if(ch>=50){ /* riga 1 h=60mm  */
+    lsz=6.5; bsz=44;
+  } else {           /* riga 2 h=22mm  */
+    lsz=6.5;
+  }
+
+  /* etichetta, vicino alla riga sopra (stessa distanza di Scena/Inq./Take) */
+  p.text(cell.l, cx+cw/2, cy+LBL_GAP, {sz:lsz, bold:true, col:th.ink, al:'center', bl:'middle'});
+
+  if(!cell.lock){
+    var v=(vals[cell.k]||'').trim();
+    if(v){
+      if(cell.big){
+        /* valore grande centrato */
+        p.text(v, cx+cw/2, cy+ch*0.54,
+          {sz:bsz, bold:true, col:th.ink, al:'center', bl:'middle'});
+      } else {
+        /* valore piccolo in basso, centrato */
+        p.text(v, cx+cw/2, cy+ch-pad, {sz:vsz, bold:false, col:th.ink, al:'center', bl:'bottom'});
+      }
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ANTEPRIMA CANVAS (con battuta)
+   ══════════════════════════════════════════════ */
+var canvas=document.getElementById('slate');
+
+function rrpTop(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
+  c.lineTo(x+w,y+h);
+  c.lineTo(x,y+h);
+  c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r);
+  c.closePath();
+}
+function drawClapper(ctx,s){
+  var W=BW*s, H=CH*s;
+  ctx.save(); rrpTop(ctx,0,0,W,H,3*s); ctx.clip();
+  ctx.fillStyle='#f0f0f0'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0d0d0d';
+  var sw=18*s;
+  for(var x=-H;x<W+H;x+=sw*2){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+sw,0);
+    ctx.lineTo(x+sw-H,H); ctx.lineTo(x-H,H); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(0.8,0.5*s);
+  rrpTop(ctx,0.5,0.5,W-1,H-1,3*s); ctx.stroke();
+}
+
+function renderPreview(){
+  var host=canvas.parentElement;
+  var cssW=Math.min(host.clientWidth-32,1500);
+  var s=cssW/BW;
+  var maxH=Math.min(window.innerHeight*0.82,1100);
+  if((CH+BH)*s>maxH){ s=maxH/(CH+BH); cssW=BW*s; }
+  var cssH=(CH+BH)*s;
+  var dpr=window.devicePixelRatio||1;
+
+  canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+  canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
+  var ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+
+  drawClapper(ctx,s);
+  drawBody(new CP(ctx,s,0,CH*s), TH[themeKey]);
+
+  /* contorno bianco attorno a tutto il ciak, barra compresa */
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.5;
+  rrpTop(ctx,0.75,0.75,cssW-1.5,cssH-1.5,3*s); ctx.stroke();
+}
+
+/* ══════════════════════════════════════════════
+   EXPORT PDF  (solo corpo, 298×192mm)
+   ══════════════════════════════════════════════ */
+function exportPDF(){
+  var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:[BW,BH]});
+  drawBody(new PP(doc), TH[themeKey]);
+  doc.save('Ciak_'+themeKey+'.pdf');
+}
+
+/* ══════════════════════════════════════════════
+   IMAGE IMPORT
+   ══════════════════════════════════════════════ */
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc=
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* render ad alta risoluzione per jsPDF, stesso fit/zoom/posizione della preview, sfondo bianco */
+function makeFitUrl(img,fit,zoom,posX,posY){
+  var sc=5, cW=Math.round(BW*sc), cH=Math.round(IH*sc);
+  var tmp=document.createElement('canvas'); tmp.width=cW; tmp.height=cH;
+  var ctx=tmp.getContext('2d');
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cW,cH);
+  var d=computeDraw(img,fit,zoom,posX,posY,cW,cH);
+  ctx.drawImage(img,d.dx,d.dy,d.dw,d.dh);
+  return tmp.toDataURL('image/jpeg',0.92);
+}
+function readDataUrl(file){
+  return new Promise(function(res,rej){
+    var fr=new FileReader(); fr.onload=function(){ res(fr.result); }; fr.onerror=rej;
+    fr.readAsDataURL(file);
+  });
+}
+function loadImg(src){
+  return new Promise(function(res,rej){
+    var i=new Image(); i.onload=function(){ res(i); }; i.onerror=rej; i.src=src;
+  });
+}
+async function pdfFirstPage(file){
+  if(!window.pdfjsLib) throw new Error('PDF.js non disponibile');
+  var buf=await file.arrayBuffer();
+  var pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  var page=await pdf.getPage(1);
+  var vp=page.getViewport({scale:3});
+  var c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+  await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  return c.toDataURL('image/jpeg',0.92);
+}
+
+document.getElementById('imgInput').addEventListener('change', async function(e){
+  var file=e.target.files[0]; if(!file) return;
+  var lbl=document.getElementById('imgLabel');
+  var sub=document.getElementById('imgSub');
+  lbl.textContent='Caricamento…'; sub.textContent='';
+  try{
+    var dataUrl = file.type==='application/pdf'
+      ? await pdfFirstPage(file)
+      : await readDataUrl(file);
+    var img=await loadImg(dataUrl);
+    imported={img:img};
+    lbl.textContent='Immagine caricata';
+    sub.textContent=img.width+'×'+img.height+' px';
+    document.getElementById('imgDrop').classList.add('loaded');
+    document.getElementById('imgActs').classList.add('vis');
+    renderPreview();
+  }catch(err){
+    console.error(err);
+    lbl.textContent='Importa immagine';
+    sub.textContent='Errore — usa JPEG o PNG';
+    alert('Impossibile caricare il file.\nProva con JPEG o PNG.');
+  }
+  e.target.value='';
+});
+
+document.getElementById('imgRemove').addEventListener('click',function(){
+  imported=null;
+  document.getElementById('imgDrop').classList.remove('loaded');
+  document.getElementById('imgActs').classList.remove('vis');
+  document.getElementById('imgLabel').textContent='Importa immagine';
+  document.getElementById('imgSub').textContent='JPEG · PNG · TIFF · PDF';
+  renderPreview();
+});
+
+/* ══════════════════════════════════════════════
+   CONTROLLI UI
+   ══════════════════════════════════════════════ */
+function segSel(seg,attr,fn){
+  seg.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      seg.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on'); fn(b.getAttribute(attr));
+    });
+  });
+}
+segSel(document.getElementById('themeSeg'),'data-t',function(v){ themeKey=v; renderPreview(); });
+segSel(document.getElementById('fitSeg'),'data-f',function(v){ imgFit=v; renderPreview(); });
+document.getElementById('fontSel').addEventListener('change',function(e){ fontKey=e.target.value; renderPreview(); });
+document.getElementById('exportBtn').addEventListener('click',exportPDF);
+
+function bindSlider(rangeId,valId,fmt,fn){
+  var range=document.getElementById(rangeId), out=document.getElementById(valId);
+  range.addEventListener('input',function(){
+    var v=Number(range.value); out.textContent=fmt(v); fn(v); renderPreview();
+  });
+}
+bindSlider('fontSizeRange','fontSizeVal',function(v){ return v+'%'; }, function(v){ fontScale=2+(v/100)*2.25; });
+bindSlider('zoomRange','zoomVal',function(v){ return v+'%'; }, function(v){ imgZoom=v/100; });
+bindSlider('posXRange','posXVal',function(v){ return v; }, function(v){ imgPosX=v; });
+bindSlider('posYRange','posYVal',function(v){ return v; }, function(v){ imgPosY=v; });
+var rt; window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(renderPreview,80); });
+
+/* ══════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════ */
+renderPreview();
+</script>
+</body>
+</html>
