@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CiakLab</title>
+<link rel="icon" href="icon.png" type="image/png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -26,8 +27,7 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
   border-bottom:1px solid var(--line);}
 .brand{display:flex;align-items:center;gap:11px;margin-right:auto;}
 .mark{width:30px;height:30px;border-radius:7px;flex:0 0 auto;
-  background:repeating-linear-gradient(125deg,#0b0b0d 0 7px,#fff 7px 14px);
-  border:1px solid #000;}
+  object-fit:contain;display:block;}
 .brand h1{font-size:15px;letter-spacing:.16em;font-weight:700;margin:0;}
 .brand h1 b{color:var(--accent);}
 .brand span{display:block;font-size:10.5px;letter-spacing:.22em;color:var(--muted);
@@ -110,7 +110,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
 
 <header>
   <div class="brand">
-    <div class="mark"></div>
+    <img src="icon.png" class="mark" alt="CiakLab">
     <div><h1>CIAK<b>LAB</b></h1><span>Slate Designer</span></div>
   </div>
   <button class="btn btn-acc" id="exportBtn"><span class="ic">↧</span> Esporta PDF</button>
