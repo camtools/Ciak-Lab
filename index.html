@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CiakLab</title>
-<link rel="icon" href="icon.png" type="image/png">
+<link rel="icon" href="icon.jpg">
+<link rel="apple-touch-icon" href="icon.jpg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CiakLab">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -27,7 +31,8 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
   border-bottom:1px solid var(--line);}
 .brand{display:flex;align-items:center;gap:11px;margin-right:auto;}
 .mark{width:30px;height:30px;border-radius:7px;flex:0 0 auto;
-  object-fit:contain;display:block;}
+  background:repeating-linear-gradient(125deg,#0b0b0d 0 7px,#fff 7px 14px);
+  border:1px solid #000;}
 .brand h1{font-size:15px;letter-spacing:.16em;font-weight:700;margin:0;}
 .brand h1 b{color:var(--accent);}
 .brand span{display:block;font-size:10.5px;letter-spacing:.22em;color:var(--muted);
@@ -53,7 +58,14 @@ main{max-width:1180px;margin:0 auto;padding:26px 20px 80px;}
 .frameline{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;}
 .frameline .idx{font-size:13px;letter-spacing:.18em;color:var(--accent);font-weight:700;}
 .frameline .nm{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
-.canvas-host{display:flex;justify-content:center;align-items:flex-start;}
+.stage{display:flex;align-items:center;gap:12px;}
+.nav{flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:1px solid var(--line-2);
+  background:var(--panel-2);color:var(--txt);font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s,background .15s;}
+.nav:hover{border-color:var(--accent);color:var(--accent);}
+.nav:active{transform:scale(.94);}
+.canvas-host{flex:1 1 auto;min-width:0;display:flex;justify-content:center;align-items:flex-start;}
 canvas{display:block;max-width:100%;height:auto;border-radius:2px;}
 
 /* ── panel ── */
@@ -104,13 +116,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
 input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
   background:var(--accent);cursor:pointer;border:none;}
 
+/* ── modal export ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  align-items:center;justify-content:center;z-index:50;padding:20px;}
+.modal-ov.vis{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:24px;max-width:380px;}
+.modal-box h3{margin:0 0 10px;font-size:15px;color:var(--txt);}
+.modal-box p{margin:0 0 18px;font-size:13px;line-height:1.5;color:var(--muted);}
+.modal-box p b{color:var(--txt);}
+.modal-acts{display:flex;justify-content:flex-end;gap:10px;}
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">
-    <img src="icon.png" class="mark" alt="CiakLab">
+    <div class="mark"></div>
     <div><h1>CIAK<b>LAB</b></h1><span>Slate Designer</span></div>
   </div>
   <button class="btn btn-acc" id="exportBtn"><span class="ic">↧</span> Esporta PDF</button>
@@ -119,10 +141,14 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
 <main>
   <section class="stage-wrap">
     <div class="frameline">
-      <span class="idx">01 / 01</span>
-      <span class="nm">Layout Classico</span>
+      <span class="idx" id="layIdx">01 / 02</span>
+      <span class="nm" id="layName">Layout 1</span>
     </div>
-    <div class="canvas-host"><canvas id="slate"></canvas></div>
+    <div class="stage">
+      <button class="nav" id="prevLayout" aria-label="Layout precedente">‹</button>
+      <div class="canvas-host"><canvas id="slate"></canvas></div>
+      <button class="nav" id="nextLayout" aria-label="Layout successivo">›</button>
+    </div>
   </section>
 
   <aside class="panel">
@@ -188,35 +214,65 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
   </aside>
 </main>
 
+<div class="modal-ov" id="exportModal">
+  <div class="modal-box">
+    <h3>Esportare il PDF?</h3>
+    <p>Verrà esportato <b>solo il corpo del ciak</b> (298×192mm), <b>senza la barra superiore che fa da battuta</b>: quella serve solo per l'anteprima a schermo e non viene stampata.</p>
+    <div class="modal-acts">
+      <button class="btn-sm" id="exportCancel">Annulla</button>
+      <button class="btn btn-acc" id="exportConfirm">Esporta</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ══════════════════════════════════════════════
    COSTANTI  (tutte in mm)
-   Derivate dal SVG: viewBox 0 0 3520 2268
+   Derivate dagli SVG: viewBox 0 0 3520 2268
    scala = 3519.685 / 298 = 11.8125 px/mm
    ══════════════════════════════════════════════ */
 var BW = 298, BH = 192;   // body
-var IH = 100;              // altezza zona immagine (rect rosso SVG: h=1181/11.8125)
+var IH = 100;              // altezza zona immagine, uguale in entrambi i layout
 var CH = 30;               // altezza battuta in anteprima
 
-/* confini colonne (SVG: x=1175→99.47mm, x=2347→198.70mm) */
+/* confini colonne, uguali in entrambi i layout (SVG: x=1175→99.47mm, x=2347→198.70mm) */
 var CX = [0, 99.47, 198.70, 298];
 
-/* confini righe (SVG: y=1181→100mm, y=1299→110mm, y=2008→170mm) */
-var RY = [100, 110, 170, 192];
+var LW = 0.353;  /* spessore linee mm (SVG: 4.17px / 11.8125) */
+var LBL_GAP = 5; /* distanza delle etichette dalla riga sopra */
 
-/* celle griglia [riga][colonna] */
-var CELLS = [
-  [ {k:'scn0',l:'SCENA'},          {k:'inq0',l:'INQ.'},           {k:'tk0',l:'TAKE'} ],
-  [ {k:'scn', l:'',big:1},    {k:'inq',l:'',big:1},      {k:'tk',l:'',big:1}  ],
-  [ {k:'data',l:'DATA',lock:1},    {k:'ie', l:'INT / EST',lock:1},{k:'gn',l:'',lock:1} ]
+/* ══════════════════════════════════════════════
+   LAYOUT  (due varianti, selezionabili)
+   ══════════════════════════════════════════════ */
+var LAYOUTS = [
+  {
+    name:'Layout 1', /* immagine sopra, campi sotto */
+    imageY:0, imageH:100,
+    textY:[100,192],
+    hlines:[100,170], /* niente riga sotto Scena/Inq./Take (y=110) */
+    rows:[
+      {y:100,h:10, cells:[{k:'scn0',l:'SCENA'},{k:'inq0',l:'INQ.'},{k:'tk0',l:'TAKE'}]},
+      {y:110,h:60, cells:[{k:'scn', l:'',big:1},{k:'inq',l:'',big:1},{k:'tk',l:'',big:1}]},
+      {y:170,h:22, cells:[{k:'data',l:'DATA',lock:1},{k:'ie',l:'INT/EXT   DAY/NIGHT',lock:1},{k:'gn',l:'',lock:1}]}
+    ]
+  },
+  {
+    name:'Layout 2', /* campi sopra, immagine sotto */
+    imageY:92, imageH:100,
+    textY:[0,92],
+    hlines:[70,92],
+    rows:[
+      {y:0,h:70,  cells:[{k:'scn2',l:'SCENA',big:1},{k:'inq2',l:'INQ.',big:1},{k:'tk2',l:'TAKE',big:1}]},
+      {y:70,h:22, cells:[{k:'data2',l:'DATA',lock:1},{k:'ie2',l:'INT/EXT',lock:1},{k:'gn2',l:'DAY/NIGHT',lock:1}]}
+    ]
+  }
 ];
-
-var LW = 0.353; /* spessore linee mm (SVG: 4.17px / 11.8125) */
-var LBL_GAP = (RY[1]-RY[0])/2; /* distanza delle etichette dalla riga sopra: stessa di Scena/Inq./Take */
+function curLayout(){ return LAYOUTS[layoutIdx]; }
 
 /* ══════════════════════════════════════════════
    STATO
    ══════════════════════════════════════════════ */
+var layoutIdx = 0;
 var themeKey = 'light';
 var fontKey  = 'sans';
 var fontScale= 2;       /* moltiplicatore dimensione testo: slider 0-100, 0=ex 40%, 100=ex 85% */
@@ -226,7 +282,7 @@ var imgPosX  = 0;       /* spostamento orizzontale, % della larghezza riquadro *
 var imgPosY  = 0;       /* spostamento verticale, % dell'altezza riquadro */
 var imported = null;   /* {img:HTMLImageElement} */
 var vals = {};
-CELLS.forEach(function(row){ row.forEach(function(c){ vals[c.k] = c.v||''; }); });
+LAYOUTS.forEach(function(L){ L.rows.forEach(function(row){ row.cells.forEach(function(c){ vals[c.k] = c.v||''; }); }); });
 
 /* ══════════════════════════════════════════════
    TEMI E FONT
@@ -320,31 +376,28 @@ PP.prototype.drawImg=function(x,y,w,h){
 /* ══════════════════════════════════════════════
    DRAW BODY  (comune canvas + PDF)
    ══════════════════════════════════════════════ */
-function drawBody(p, th){
+function drawBody(p, th, layout){
   /* sfondo */
   p.fillRect(0,0,BW,BH,th.bg);
 
   /* zona immagine */
   if(imported){
-    p.drawImg(0,0,BW,IH);
+    p.drawImg(0,layout.imageY,BW,layout.imageH);
   } else {
-    p.fillRect(0,0,BW,IH,'#F2A23B');
-    p.text('IMMAGINE (29,8x10cm)', BW/2, IH/2,
+    p.fillRect(0,layout.imageY,BW,layout.imageH,'#F2A23B');
+    p.text('IMMAGINE (29,8x10cm)', BW/2, layout.imageY+layout.imageH/2,
       {sz:13, bold:true, col:'#1a1206', al:'center', bl:'middle'});
   }
 
-  /* linee griglia (fedele all'SVG) */
+  /* linee griglia (fedele agli SVG) */
   p.setStroke(th.ink, LW);
-  /* orizzontali: y=100, 110, 170 — no bordo esterno */
-  RY.slice(0,-1).forEach(function(y){ p.line(0,y,BW,y); });
-  /* verticali: x=99.47, x=198.70 — da y=100 a y=192 */
-  [CX[1],CX[2]].forEach(function(x){ p.line(x,RY[0],x,BH); });
+  layout.hlines.forEach(function(y){ p.line(0,y,BW,y); });
+  [CX[1],CX[2]].forEach(function(x){ p.line(x,layout.textY[0],x,layout.textY[1]); });
 
   /* contenuto celle */
-  CELLS.forEach(function(row,ri){
-    var cy=RY[ri], ch=RY[ri+1]-RY[ri];
-    row.forEach(function(cell,ci){
-      drawCell(p, cell, CX[ci], cy, CX[ci+1]-CX[ci], ch, th);
+  layout.rows.forEach(function(row){
+    row.cells.forEach(function(cell,ci){
+      drawCell(p, cell, CX[ci], row.y, CX[ci+1]-CX[ci], row.h, th);
     });
   });
 }
@@ -357,8 +410,8 @@ function drawCell(p, cell, cx, cy, cw, ch, th){
     lsz=5.5; vsz=7.5;
   } else if(ch>=50){ /* riga 1 h=60mm  */
     lsz=6.5; bsz=44;
-  } else {           /* riga 2 h=22mm  */
-    lsz=6.5;
+  } else {           /* riga 2 h=22mm: stessa dimensione etichetta della riga 0 */
+    lsz=5.5;
   }
 
   /* etichetta, vicino alla riga sopra (stessa distanza di Scena/Inq./Take) */
@@ -424,7 +477,7 @@ function renderPreview(){
   ctx.clearRect(0,0,cssW,cssH);
 
   drawClapper(ctx,s);
-  drawBody(new CP(ctx,s,0,CH*s), TH[themeKey]);
+  drawBody(new CP(ctx,s,0,CH*s), TH[themeKey], curLayout());
 
   /* contorno bianco attorno a tutto il ciak, barra compresa */
   ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.5;
@@ -436,8 +489,8 @@ function renderPreview(){
    ══════════════════════════════════════════════ */
 function exportPDF(){
   var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:[BW,BH]});
-  drawBody(new PP(doc), TH[themeKey]);
-  doc.save('Ciak_'+themeKey+'.pdf');
+  drawBody(new PP(doc), TH[themeKey], curLayout());
+  doc.save('Ciak_'+curLayout().name.replace(/\s+/g,'_')+'_'+themeKey+'.pdf');
 }
 
 /* ══════════════════════════════════════════════
@@ -525,10 +578,20 @@ function segSel(seg,attr,fn){
     });
   });
 }
+function syncFrameline(){
+  document.getElementById('layIdx').textContent=String(layoutIdx+1).padStart(2,'0')+' / '+String(LAYOUTS.length).padStart(2,'0');
+  document.getElementById('layName').textContent=curLayout().name;
+}
+function goLayout(i){ layoutIdx=(i+LAYOUTS.length)%LAYOUTS.length; syncFrameline(); renderPreview(); }
+document.getElementById('prevLayout').addEventListener('click',function(){ goLayout(layoutIdx-1); });
+document.getElementById('nextLayout').addEventListener('click',function(){ goLayout(layoutIdx+1); });
 segSel(document.getElementById('themeSeg'),'data-t',function(v){ themeKey=v; renderPreview(); });
 segSel(document.getElementById('fitSeg'),'data-f',function(v){ imgFit=v; renderPreview(); });
 document.getElementById('fontSel').addEventListener('change',function(e){ fontKey=e.target.value; renderPreview(); });
-document.getElementById('exportBtn').addEventListener('click',exportPDF);
+var exportModal=document.getElementById('exportModal');
+document.getElementById('exportBtn').addEventListener('click',function(){ exportModal.classList.add('vis'); });
+document.getElementById('exportCancel').addEventListener('click',function(){ exportModal.classList.remove('vis'); });
+document.getElementById('exportConfirm').addEventListener('click',function(){ exportModal.classList.remove('vis'); exportPDF(); });
 
 function bindSlider(rangeId,valId,fmt,fn){
   var range=document.getElementById(rangeId), out=document.getElementById(valId);
@@ -545,6 +608,7 @@ var rt; window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTim
 /* ══════════════════════════════════════════════
    INIT
    ══════════════════════════════════════════════ */
+syncFrameline();
 renderPreview();
 </script>
 </body>
