@@ -11,7 +11,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="fonts-data.js"></script>
 <style>
+/* ── font personalizzati (anteprima a schermo) ── */
+@font-face{font-family:'Berani';src:url('font/Berani.ttf');}
+@font-face{font-family:'HauntingEleanor';src:url('font/HauntingEleanor-Regular.ttf');}
+@font-face{font-family:'DeadFontWalking';src:url('font/Dead Font Walking.otf');}
+@font-face{font-family:'Friday13';src:url('font/Friday13v12.ttf');}
+@font-face{font-family:'IStillKnow';src:url('font/I Still Know.ttf');}
+@font-face{font-family:'DevilsCrew';src:url('font/Devils Crew.ttf');}
+
 :root{
   --bg:#0b0b0d; --panel:#141417; --panel-2:#1b1b20;
   --line:#2a2a31; --line-2:#34343c;
@@ -181,6 +190,12 @@ input[type=color]{width:44px;height:30px;border:1px solid var(--line-2);border-r
         <option value="trebuchet">Trebuchet MS</option>
         <option value="garamond">Garamond</option>
         <option value="bebas">Bebas Neue</option>
+        <option value="berani">Berani</option>
+        <option value="haunting">Haunting Eleanor</option>
+        <option value="deadfont">Dead Font Walking</option>
+        <option value="friday13">Friday 13</option>
+        <option value="istillknow">I Still Know</option>
+        <option value="devilscrew">Devils Crew</option>
       </select>
     </div>
     <div class="sld">
@@ -249,6 +264,12 @@ input[type=color]{width:44px;height:30px;border:1px solid var(--line-2);border-r
           <option value="trebuchet">Trebuchet MS</option>
           <option value="garamond">Garamond</option>
           <option value="bebas">Bebas Neue</option>
+          <option value="berani">Berani</option>
+          <option value="haunting">Haunting Eleanor</option>
+          <option value="deadfont">Dead Font Walking</option>
+          <option value="friday13">Friday 13</option>
+          <option value="istillknow">I Still Know</option>
+          <option value="devilscrew">Devils Crew</option>
         </select>
       </div>
       <div class="sld">
@@ -413,7 +434,13 @@ var FN = {
   verdana:      {pdf:'helvetica',ps:'normal', css:'Verdana,Geneva,sans-serif'},
   trebuchet:    {pdf:'helvetica',ps:'normal', css:'"Trebuchet MS",sans-serif'},
   garamond:     {pdf:'times',    ps:'normal', css:'"EB Garamond",Garamond,Georgia,serif'},
-  bebas:        {pdf:'helvetica',ps:'bold',   css:'"Bebas Neue",Impact,sans-serif'}
+  bebas:        {pdf:'helvetica',ps:'bold',   css:'"Bebas Neue",Impact,sans-serif'},
+  berani:      {pdf:'helvetica',ps:'normal', css:"Berani,sans-serif", data:'berani',    pdfName:'Berani'},
+  haunting:    {pdf:'helvetica',ps:'normal', css:"HauntingEleanor,serif", data:'haunting', pdfName:'HauntingEleanor'},
+  deadfont:    {pdf:'helvetica',ps:'normal', css:"DeadFontWalking,sans-serif", data:'deadfont', pdfName:'DeadFontWalking'},
+  friday13:    {pdf:'helvetica',ps:'normal', css:"Friday13,sans-serif", data:'friday13', pdfName:'Friday13'},
+  istillknow:  {pdf:'helvetica',ps:'normal', css:"IStillKnow,sans-serif", data:'istillknow', pdfName:'IStillKnow'},
+  devilscrew:  {pdf:'helvetica',ps:'normal', css:"DevilsCrew,sans-serif", data:'devilscrew', pdfName:'DevilsCrew'}
 };
 
 /* ══════════════════════════════════════════════
@@ -478,10 +505,25 @@ PP.prototype.text=function(str,x,y,o){
   if(!str) return;
   var r=hr(o.col); this.d.setTextColor(r[0],r[1],r[2]);
   var f=FN[o.font||fontKey];
-  this.d.setFont(f.pdf, o.bold?(f.ps==='bold'?'bold':'bold'):(f.ps==='bold'?'bold':'normal'));
+  if(f.data && this.d._embeddedFonts && this.d._embeddedFonts[o.font||fontKey]){
+    this.d.setFont(f.pdfName,'normal');
+  } else {
+    this.d.setFont(f.pdf, o.bold?(f.ps==='bold'?'bold':'bold'):(f.ps==='bold'?'bold':'normal'));
+  }
   this.d.setFontSize(o.sz*(o.noScale?1:fontScale));
   this.d.text(str,x,y,{align:o.al||'left',baseline:o.bl||'alphabetic'});
 };
+/* registra nel PDF un font personalizzato (file in font/, dati base64 in FONT_DATA) */
+function embedCustomFont(doc, key){
+  var f=FN[key];
+  if(!f.data || (doc._embeddedFonts && doc._embeddedFonts[key])) return;
+  var b64=window.FONT_DATA && window.FONT_DATA[f.data];
+  if(!b64) return;
+  doc.addFileToVFS(f.pdfName+'.ttf', b64);
+  doc.addFont(f.pdfName+'.ttf', f.pdfName, 'normal');
+  doc._embeddedFonts = doc._embeddedFonts || {};
+  doc._embeddedFonts[key] = true;
+}
 PP.prototype.drawImg=function(x,y,w,h){
   if(!imported) return;
   this.d.setFillColor(255,255,255); this.d.rect(x,y,w,h,'F');
@@ -638,6 +680,8 @@ function renderPreview(){
    ══════════════════════════════════════════════ */
 function exportPDF(){
   var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:[BW,BH]});
+  embedCustomFont(doc, fontKey);
+  embedCustomFont(doc, custFontKey);
   drawBody(new PP(doc), TH[themeKey], curLayout());
   doc.save('Ciak_'+curLayout().name.replace(/\s+/g,'_')+'_'+themeKey+'.pdf');
 }
