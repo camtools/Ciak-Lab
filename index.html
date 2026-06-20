@@ -16,7 +16,7 @@
   --bg:#0b0b0d; --panel:#141417; --panel-2:#1b1b20;
   --line:#2a2a31; --line-2:#34343c;
   --txt:#ECECEE; --muted:#8A8A93; --faint:#5e5e66;
-  --accent:#F2A23B; --accent-p:#d98a26;
+  --accent:#FF9500; --accent-p:#FF9500;
   --r:14px;
   --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
@@ -116,6 +116,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
 input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
   background:var(--accent);cursor:pointer;border:none;}
 
+.txt-input{background:var(--panel-2);border:1px solid var(--line-2);color:var(--txt);
+  border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:inherit;width:100%;
+  margin-bottom:8px;transition:border-color .15s;}
+.txt-input:focus{outline:none;border-color:var(--accent);}
+input[type=color]{width:44px;height:30px;border:1px solid var(--line-2);border-radius:8px;
+  padding:2px;background:var(--panel-2);cursor:pointer;}
+
 /* ── modal export ── */
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
   align-items:center;justify-content:center;z-index:50;padding:20px;}
@@ -141,7 +148,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
 <main>
   <section class="stage-wrap">
     <div class="frameline">
-      <span class="idx" id="layIdx">01 / 02</span>
+      <span class="idx" id="layIdx">01 / 03</span>
       <span class="nm" id="layName">Layout 1</span>
     </div>
     <div class="stage">
@@ -169,6 +176,11 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
         <option value="impact">Impact</option>
         <option value="helveticacond">Helvetica Condensed</option>
         <option value="futura">Futura / Geometrico</option>
+        <option value="georgia">Georgia</option>
+        <option value="verdana">Verdana</option>
+        <option value="trebuchet">Trebuchet MS</option>
+        <option value="garamond">Garamond</option>
+        <option value="bebas">Bebas Neue</option>
       </select>
     </div>
     <div class="sld">
@@ -211,6 +223,39 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
       <div class="sld-row"><span>Posizione verticale</span><b id="posYVal">0</b></div>
       <input type="range" id="posYRange" min="-50" max="50" step="1" value="0">
     </div>
+
+    <div id="l4Section" style="display:none;">
+      <div class="div"></div>
+      <span class="sec-lbl">Testi (Prod / Regia / Dop)</span>
+      <input type="text" class="txt-input" id="prodInput" placeholder="PROD:">
+      <input type="text" class="txt-input" id="regiaInput" placeholder="REGIA:">
+      <input type="text" class="txt-input" id="dopInput" placeholder="DOP:">
+      <div class="ctrl">
+        <span>Colore testo</span>
+        <input type="color" id="custColorInput" value="#000000">
+      </div>
+      <div class="ctrl">
+        <span>Font</span>
+        <select id="custFontSel">
+          <option value="sans">Sans · Helvetica</option>
+          <option value="serif">Serif · Times</option>
+          <option value="mono">Mono · Courier</option>
+          <option value="arialblack">Arial Black</option>
+          <option value="impact">Impact</option>
+          <option value="helveticacond">Helvetica Condensed</option>
+          <option value="futura">Futura / Geometrico</option>
+          <option value="georgia">Georgia</option>
+          <option value="verdana">Verdana</option>
+          <option value="trebuchet">Trebuchet MS</option>
+          <option value="garamond">Garamond</option>
+          <option value="bebas">Bebas Neue</option>
+        </select>
+      </div>
+      <div class="sld">
+        <div class="sld-row"><span>Dimensione testo</span><b id="custSizeVal">16.5mm</b></div>
+        <input type="range" id="custSizeRange" min="7.5" max="35" step="0.5" value="16.5">
+      </div>
+    </div>
   </aside>
 </main>
 
@@ -232,42 +277,99 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
    scala = 3519.685 / 298 = 11.8125 px/mm
    ══════════════════════════════════════════════ */
 var BW = 298, BH = 192;   // body
-var IH = 100;              // altezza zona immagine, uguale in entrambi i layout
 var CH = 30;               // altezza battuta in anteprima
 
-/* confini colonne, uguali in entrambi i layout (SVG: x=1175→99.47mm, x=2347→198.70mm) */
+/* confini colonne, uguali in tutti i layout (SVG: x=1175→99.47mm, x=2347→198.70mm) */
 var CX = [0, 99.47, 198.70, 298];
 
 var LW = 0.353;  /* spessore linee mm (SVG: 4.17px / 11.8125) */
 var LBL_GAP = 5; /* distanza delle etichette dalla riga sopra */
 
 /* ══════════════════════════════════════════════
-   LAYOUT  (due varianti, selezionabili)
+   LAYOUT  (varianti selezionabili)
+   ogni layout: imageBox{x,y,w,h}, lines[[x1,y1,x2,y2],...], cells[{x,y,w,h,type,...}]
    ══════════════════════════════════════════════ */
 var LAYOUTS = [
   {
     name:'Layout 1', /* immagine sopra, campi sotto */
-    imageY:0, imageH:100,
-    textY:[100,192],
-    hlines:[100,170], /* niente riga sotto Scena/Inq./Take (y=110) */
-    rows:[
-      {y:100,h:10, cells:[{k:'scn0',l:'SCENA'},{k:'inq0',l:'INQ.'},{k:'tk0',l:'TAKE'}]},
-      {y:110,h:60, cells:[{k:'scn', l:'',big:1},{k:'inq',l:'',big:1},{k:'tk',l:'',big:1}]},
-      {y:170,h:22, cells:[{k:'data',l:'DATA',lock:1},{k:'ie',l:'INT/EXT   DAY/NIGHT',lock:1},{k:'gn',l:'',lock:1}]}
+    imageBox:{x:0,y:0,w:298,h:100},
+    lines:[
+      [0,100,298,100], [0,170,298,170],
+      [99.47,100,99.47,192], [198.70,100,198.70,192]
+    ],
+    cells:[
+      {x:0,     y:100,w:99.47,h:10, k:'scn0',l:'SCENA'},
+      {x:99.47, y:100,w:99.23,h:10, k:'inq0',l:'INQ.'},
+      {x:198.70,y:100,w:99.3, h:10, k:'tk0', l:'TAKE'},
+      {x:0,     y:110,w:99.47,h:60, k:'scn',l:'',big:1},
+      {x:99.47, y:110,w:99.23,h:60, k:'inq',l:'',big:1},
+      {x:198.70,y:110,w:99.3, h:60, k:'tk', l:'',big:1},
+      {x:0,     y:170,w:99.47,h:22, k:'data',l:'DATA',lock:1},
+      {x:99.47, y:170,w:99.23,h:22, k:'ie',  l:'',lock:1},
+      {x:198.70,y:170,w:99.3, h:22, k:'gn',  l:'',lock:1}
     ]
   },
   {
     name:'Layout 2', /* campi sopra, immagine sotto */
-    imageY:92, imageH:100,
-    textY:[0,92],
-    hlines:[70,92],
-    rows:[
-      {y:0,h:70,  cells:[{k:'scn2',l:'SCENA',big:1},{k:'inq2',l:'INQ.',big:1},{k:'tk2',l:'TAKE',big:1}]},
-      {y:70,h:22, cells:[{k:'data2',l:'DATA',lock:1},{k:'ie2',l:'INT/EXT',lock:1},{k:'gn2',l:'DAY/NIGHT',lock:1}]}
+    imageBox:{x:0,y:92,w:298,h:100},
+    lines:[
+      [0,70,298,70], [0,92,298,92],
+      [99.47,0,99.47,92], [198.70,0,198.70,92]
+    ],
+    cells:[
+      {x:0,     y:0,w:99.47,h:70, k:'scn2',l:'SCENA',big:1},
+      {x:99.47, y:0,w:99.23,h:70, k:'inq2',l:'INQ.',big:1},
+      {x:198.70,y:0,w:99.3, h:70, k:'tk2', l:'TAKE',big:1},
+      {x:0,     y:70,w:99.47,h:22, k:'data2',l:'DATA',lock:1},
+      {x:99.47, y:70,w:99.23,h:22, k:'ie2',  l:'',lock:1},
+      {x:198.70,y:70,w:99.3, h:22, k:'gn2',  l:'',lock:1}
+    ]
+  },
+  {
+    name:'Layout 3', /* immagine in alto a sx, color chart, nota velcro, fascia in basso vuota */
+    imageBox:{x:0,y:0,w:149,h:149.07}, imageLabel:'15x15',
+    lines:[
+      [0,149.07,298,149.07],        /* riga sotto immagine/color-chart/colonna B */
+      [198.70,118.9,298,118.9],     /* divide la nota velcro dal riquadro vuoto sotto */
+      [149,0,149,149.07],           /* fianco destro immagine / inizio color chart */
+      [198.70,0,198.70,149.07],     /* fianco color chart / colonna B */
+      [99.47,149.07,99.47,192],     /* divisori fascia in basso (vuota) */
+      [198.70,149.07,198.70,192]
+    ],
+    cells:[
+      {x:149,   y:0,w:49.7,h:149.07,k:'colorchart',l:'COLOR CHART',type:'vtext'},
+      {x:198.70,y:0,w:99.3, h:118.9,k:'velcro',l:['VELCRO PER','ETICHETTE','3D'],type:'note'}
+    ]
+  },
+  {
+    name:'Layout 4', /* immagine sopra, riga vuota, prod/regia/dop editabili, cam/fps/i-e/d-n, data */
+    imageBox:{x:0,y:0,w:298,h:50},
+    lines:[
+      [0,50,298,50], [0,110,298,110],
+      [99.47,50,99.47,110],
+      [0,170,198.70,170],
+      [198.70,50,198.70,192]
+    ],
+    cells:[
+      {x:0,     y:110,w:198.70,h:60, type:'stacklabels', lines:[
+        {l:'PROD:', k:'prod', editable:1},
+        {l:'REGIA:',k:'regia',editable:1},
+        {l:'DOP:',  k:'dop',  editable:1}
+      ]},
+      {x:198.70,y:110,w:99.3, h:82, type:'stacklabels', lines:[
+        {l:'CAM:',k:'cam4'},{l:'FPS:',k:'fps4'},{l:'I/E:',k:'ie4'},{l:'D/N:',k:'dn4'}
+      ]},
+      {x:0,     y:170,w:198.70,h:22, type:'stacklabels', lines:[
+        {l:'DATA:',k:'data4'}
+      ]}
     ]
   }
 ];
 function curLayout(){ return LAYOUTS[layoutIdx]; }
+function fmtCm(mm){
+  var s=(Math.round(mm/10*10)/10).toString().replace('.',',');
+  return s==='29,8' ? '30' : s; /* solo il testo mostrato, la larghezza reale resta 298mm */
+}
 
 /* ══════════════════════════════════════════════
    STATO
@@ -280,9 +382,17 @@ var imgFit   = 'cover'; /* 'cover' = riempie e taglia, 'contain' = intera, sfond
 var imgZoom  = 1;       /* zoom manuale sull'immagine */
 var imgPosX  = 0;       /* spostamento orizzontale, % della larghezza riquadro */
 var imgPosY  = 0;       /* spostamento verticale, % dell'altezza riquadro */
+var custColor= '#000000'; /* colore personalizzato dei testi editabili (Prod/Regia/Dop) */
+var custSize = 16.5;      /* dimensione mm dei testi editabili, indipendente dallo slider globale */
+var custFontKey = 'sans'; /* font personalizzato dei testi editabili (Prod/Regia/Dop) */
 var imported = null;   /* {img:HTMLImageElement} */
 var vals = {};
-LAYOUTS.forEach(function(L){ L.rows.forEach(function(row){ row.cells.forEach(function(c){ vals[c.k] = c.v||''; }); }); });
+LAYOUTS.forEach(function(L){
+  L.cells.forEach(function(c){
+    if(c.type==='stacklabels') c.lines.forEach(function(ln){ vals[ln.k]=ln.v||''; });
+    else vals[c.k] = c.v||'';
+  });
+});
 
 /* ══════════════════════════════════════════════
    TEMI E FONT
@@ -298,7 +408,12 @@ var FN = {
   arialblack:   {pdf:'helvetica',ps:'bold',   css:'"Arial Black",Arial,sans-serif'},
   impact:       {pdf:'helvetica',ps:'bold',   css:'Impact,Charcoal,sans-serif'},
   helveticacond:{pdf:'helvetica',ps:'normal', css:'"Arial Narrow","Helvetica Neue",Arial,sans-serif'},
-  futura:       {pdf:'helvetica',ps:'normal', css:'Futura,"Trebuchet MS",Arial,sans-serif'}
+  futura:       {pdf:'helvetica',ps:'normal', css:'Futura,"Trebuchet MS",Arial,sans-serif'},
+  georgia:      {pdf:'times',    ps:'normal', css:'Georgia,"Times New Roman",serif'},
+  verdana:      {pdf:'helvetica',ps:'normal', css:'Verdana,Geneva,sans-serif'},
+  trebuchet:    {pdf:'helvetica',ps:'normal', css:'"Trebuchet MS",sans-serif'},
+  garamond:     {pdf:'times',    ps:'normal', css:'"EB Garamond",Garamond,Georgia,serif'},
+  bebas:        {pdf:'helvetica',ps:'bold',   css:'"Bebas Neue",Impact,sans-serif'}
 };
 
 /* ══════════════════════════════════════════════
@@ -320,7 +435,7 @@ CP.prototype.text=function(str,x,y,o){
   if(!str) return;
   var sc=o.noScale?1:fontScale;
   var px=o.sz*sc*0.352777*this.s;
-  this.c.font=(o.bold?'700 ':'400 ')+px+'px '+FN[fontKey].css;
+  this.c.font=(o.bold?'700 ':'400 ')+px+'px '+FN[o.font||fontKey].css;
   this.c.fillStyle=o.col; this.c.textAlign=o.al||'left'; this.c.textBaseline=o.bl||'alphabetic';
   this.c.fillText(str,this.X(x),this.Y(y));
 };
@@ -362,7 +477,7 @@ PP.prototype.line=function(x1,y1,x2,y2){ this.d.line(x1,y1,x2,y2); };
 PP.prototype.text=function(str,x,y,o){
   if(!str) return;
   var r=hr(o.col); this.d.setTextColor(r[0],r[1],r[2]);
-  var f=FN[fontKey];
+  var f=FN[o.font||fontKey];
   this.d.setFont(f.pdf, o.bold?(f.ps==='bold'?'bold':'bold'):(f.ps==='bold'?'bold':'normal'));
   this.d.setFontSize(o.sz*(o.noScale?1:fontScale));
   this.d.text(str,x,y,{align:o.al||'left',baseline:o.bl||'alphabetic'});
@@ -370,7 +485,7 @@ PP.prototype.text=function(str,x,y,o){
 PP.prototype.drawImg=function(x,y,w,h){
   if(!imported) return;
   this.d.setFillColor(255,255,255); this.d.rect(x,y,w,h,'F');
-  this.d.addImage(makeFitUrl(imported.img,imgFit,imgZoom,imgPosX,imgPosY),'JPEG',x,y,w,h);
+  this.d.addImage(makeFitUrl(imported.img,imgFit,imgZoom,imgPosX,imgPosY,w,h),'JPEG',x,y,w,h);
 };
 
 /* ══════════════════════════════════════════════
@@ -381,24 +496,26 @@ function drawBody(p, th, layout){
   p.fillRect(0,0,BW,BH,th.bg);
 
   /* zona immagine */
+  var ib=layout.imageBox;
   if(imported){
-    p.drawImg(0,layout.imageY,BW,layout.imageH);
+    p.drawImg(ib.x,ib.y,ib.w,ib.h);
   } else {
-    p.fillRect(0,layout.imageY,BW,layout.imageH,'#F2A23B');
-    p.text('IMMAGINE (29,8x10cm)', BW/2, layout.imageY+layout.imageH/2,
+    p.fillRect(ib.x,ib.y,ib.w,ib.h,'#F2A23B');
+    var dimLbl=layout.imageLabel||(fmtCm(ib.w)+'x'+fmtCm(ib.h));
+    p.text('IMMAGINE ('+dimLbl+'cm)', ib.x+ib.w/2, ib.y+ib.h/2,
       {sz:13, bold:true, col:'#1a1206', al:'center', bl:'middle'});
   }
 
   /* linee griglia (fedele agli SVG) */
   p.setStroke(th.ink, LW);
-  layout.hlines.forEach(function(y){ p.line(0,y,BW,y); });
-  [CX[1],CX[2]].forEach(function(x){ p.line(x,layout.textY[0],x,layout.textY[1]); });
+  layout.lines.forEach(function(seg){ p.line(seg[0],seg[1],seg[2],seg[3]); });
 
   /* contenuto celle */
-  layout.rows.forEach(function(row){
-    row.cells.forEach(function(cell,ci){
-      drawCell(p, cell, CX[ci], row.y, CX[ci+1]-CX[ci], row.h, th);
-    });
+  layout.cells.forEach(function(cell){
+    if(cell.type==='vtext') drawVText(p,cell,th);
+    else if(cell.type==='note') drawNote(p,cell,th);
+    else if(cell.type==='stacklabels') drawStackLabels(p,cell,th);
+    else drawCell(p,cell,cell.x,cell.y,cell.w,cell.h,th);
   });
 }
 
@@ -430,6 +547,38 @@ function drawCell(p, cell, cx, cy, cw, ch, th){
       }
     }
   }
+}
+
+/* etichetta scritta in verticale, una lettera per riga (es. "COLOR CHART") */
+function drawVText(p, cell, th){
+  var chars=cell.l.split(''), lineH=6.5;
+  var startY=cell.y+cell.h/2-(chars.length*lineH)/2+lineH/2;
+  chars.forEach(function(c,i){
+    if(c===' ') return;
+    p.text(c, cell.x+cell.w/2, startY+i*lineH, {sz:6.5, bold:true, col:th.ink, al:'center', bl:'middle'});
+  });
+}
+
+/* nota informativa multi-riga, centrata nel riquadro (es. "VELCRO PER / ETICHETTE / 3D") */
+function drawNote(p, cell, th){
+  var lines=cell.l, lineH=7;
+  var startY=cell.y+cell.h/2-(lines.length*lineH)/2+lineH/2;
+  lines.forEach(function(line,i){
+    p.text(line, cell.x+cell.w/2, startY+i*lineH, {sz:5.5, bold:true, col:th.ink, al:'center', bl:'middle'});
+  });
+}
+
+/* etichette impilate a sinistra (es. PROD:/REGIA:/DOP:), alcune con valore editabile */
+function drawStackLabels(p, cell, th){
+  var pad=5, valX=cell.x+38, n=cell.lines.length, gap=cell.h/(n+1);
+  cell.lines.forEach(function(line,i){
+    var ly=cell.y+gap*(i+1);
+    p.text(line.l, cell.x+pad, ly, {sz:6.5, bold:true, col:th.ink, al:'left', bl:'middle'});
+    if(line.editable){
+      var v=(vals[line.k]||'').trim();
+      if(v) p.text(v, valX, ly, {sz:custSize, bold:false, col:custColor, al:'left', bl:'middle', noScale:true, font:custFontKey});
+    }
+  });
 }
 
 /* ══════════════════════════════════════════════
@@ -502,8 +651,8 @@ if(window.pdfjsLib){
 }
 
 /* render ad alta risoluzione per jsPDF, stesso fit/zoom/posizione della preview, sfondo bianco */
-function makeFitUrl(img,fit,zoom,posX,posY){
-  var sc=5, cW=Math.round(BW*sc), cH=Math.round(IH*sc);
+function makeFitUrl(img,fit,zoom,posX,posY,boxW,boxH){
+  var sc=5, cW=Math.round(boxW*sc), cH=Math.round(boxH*sc);
   var tmp=document.createElement('canvas'); tmp.width=cW; tmp.height=cH;
   var ctx=tmp.getContext('2d');
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cW,cH);
@@ -581,6 +730,7 @@ function segSel(seg,attr,fn){
 function syncFrameline(){
   document.getElementById('layIdx').textContent=String(layoutIdx+1).padStart(2,'0')+' / '+String(LAYOUTS.length).padStart(2,'0');
   document.getElementById('layName').textContent=curLayout().name;
+  document.getElementById('l4Section').style.display=(layoutIdx===3)?'block':'none';
 }
 function goLayout(i){ layoutIdx=(i+LAYOUTS.length)%LAYOUTS.length; syncFrameline(); renderPreview(); }
 document.getElementById('prevLayout').addEventListener('click',function(){ goLayout(layoutIdx-1); });
@@ -603,6 +753,14 @@ bindSlider('fontSizeRange','fontSizeVal',function(v){ return v+'%'; }, function(
 bindSlider('zoomRange','zoomVal',function(v){ return v+'%'; }, function(v){ imgZoom=v/100; });
 bindSlider('posXRange','posXVal',function(v){ return v; }, function(v){ imgPosX=v; });
 bindSlider('posYRange','posYVal',function(v){ return v; }, function(v){ imgPosY=v; });
+bindSlider('custSizeRange','custSizeVal',function(v){ return v+'mm'; }, function(v){ custSize=v; });
+
+document.getElementById('prodInput').addEventListener('input',function(e){ vals.prod=e.target.value; renderPreview(); });
+document.getElementById('regiaInput').addEventListener('input',function(e){ vals.regia=e.target.value; renderPreview(); });
+document.getElementById('dopInput').addEventListener('input',function(e){ vals.dop=e.target.value; renderPreview(); });
+document.getElementById('custColorInput').addEventListener('input',function(e){ custColor=e.target.value; renderPreview(); });
+document.getElementById('custFontSel').addEventListener('change',function(e){ custFontKey=e.target.value; renderPreview(); });
+
 var rt; window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(renderPreview,80); });
 
 /* ══════════════════════════════════════════════
