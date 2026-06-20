@@ -117,7 +117,11 @@ select:focus{outline:none;border-color:var(--accent);}
 .sld{margin-bottom:14px;}
 .sld-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
 .sld-row span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
-.sld-row b{font-size:11.5px;color:var(--txt);font-weight:600;}
+.sld-row .unit{font-size:11px;color:var(--muted);margin-left:3px;}
+.sld-num{width:48px;background:var(--panel-2);border:1px solid var(--line-2);color:var(--txt);
+  border-radius:6px;padding:3px 5px;font-size:11.5px;font-weight:600;font-family:inherit;
+  text-align:right;-moz-appearance:textfield;appearance:textfield;}
+.sld-num:focus{outline:none;border-color:var(--accent);}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;
   background:var(--line-2);accent-color:var(--accent);}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
@@ -199,7 +203,9 @@ input[type=color]{width:44px;height:30px;border:1px solid var(--line-2);border-r
       </select>
     </div>
     <div class="sld">
-      <div class="sld-row"><span>Dimensione testo</span><b id="fontSizeVal">0%</b></div>
+      <div class="sld-row"><span>Dimensione testo</span>
+        <span><input type="number" class="sld-num" id="fontSizeVal" min="0" max="100" step="1" value="0"><span class="unit">%</span></span>
+      </div>
       <input type="range" id="fontSizeRange" min="0" max="100" step="1" value="0">
     </div>
 
@@ -227,15 +233,21 @@ input[type=color]{width:44px;height:30px;border:1px solid var(--line-2);border-r
       </div>
     </div>
     <div class="sld">
-      <div class="sld-row"><span>Zoom</span><b id="zoomVal">100%</b></div>
+      <div class="sld-row"><span>Zoom</span>
+        <span><input type="number" class="sld-num" id="zoomVal" min="50" max="300" step="5" value="100"><span class="unit">%</span></span>
+      </div>
       <input type="range" id="zoomRange" min="50" max="300" step="5" value="100">
     </div>
     <div class="sld">
-      <div class="sld-row"><span>Posizione orizzontale</span><b id="posXVal">0</b></div>
+      <div class="sld-row"><span>Posizione orizzontale</span>
+        <input type="number" class="sld-num" id="posXVal" min="-50" max="50" step="1" value="0">
+      </div>
       <input type="range" id="posXRange" min="-50" max="50" step="1" value="0">
     </div>
     <div class="sld">
-      <div class="sld-row"><span>Posizione verticale</span><b id="posYVal">0</b></div>
+      <div class="sld-row"><span>Posizione verticale</span>
+        <input type="number" class="sld-num" id="posYVal" min="-50" max="50" step="1" value="0">
+      </div>
       <input type="range" id="posYRange" min="-50" max="50" step="1" value="0">
     </div>
 
@@ -273,7 +285,9 @@ input[type=color]{width:44px;height:30px;border:1px solid var(--line-2);border-r
         </select>
       </div>
       <div class="sld">
-        <div class="sld-row"><span>Dimensione testo</span><b id="custSizeVal">16.5mm</b></div>
+        <div class="sld-row"><span>Dimensione testo</span>
+          <span><input type="number" class="sld-num" id="custSizeVal" min="7.5" max="35" step="0.5" value="16.5"><span class="unit">mm</span></span>
+        </div>
         <input type="range" id="custSizeRange" min="7.5" max="35" step="0.5" value="16.5">
       </div>
     </div>
@@ -787,31 +801,17 @@ document.getElementById('exportBtn').addEventListener('click',function(){ export
 document.getElementById('exportCancel').addEventListener('click',function(){ exportModal.classList.remove('vis'); });
 document.getElementById('exportConfirm').addEventListener('click',function(){ exportModal.classList.remove('vis'); exportPDF(); });
 
-function bindSlider(rangeId,valId,fmt,fn){
+/* slider + campo numero sincronizzati nei due sensi */
+function bindSlider(rangeId,valId,fn){
   var range=document.getElementById(rangeId), out=document.getElementById(valId);
-  range.addEventListener('input',function(){
-    var v=Number(range.value); out.textContent=fmt(v); fn(v); renderPreview();
-  });
+  var min=Number(range.min), max=Number(range.max);
+  function sync(v){
+    if(isNaN(v)) return;
+    v=Math.min(max,Math.max(min,v));
+    range.value=v; out.value=v; fn(v); renderPreview();
+  }
+  range.addEventListener('input',function(){ sync(Number(range.value)); });
+  out.addEventListener('input',function(){ sync(Number(out.value)); });
 }
-bindSlider('fontSizeRange','fontSizeVal',function(v){ return v+'%'; }, function(v){ fontScale=2+(v/100)*2.25; });
-bindSlider('zoomRange','zoomVal',function(v){ return v+'%'; }, function(v){ imgZoom=v/100; });
-bindSlider('posXRange','posXVal',function(v){ return v; }, function(v){ imgPosX=v; });
-bindSlider('posYRange','posYVal',function(v){ return v; }, function(v){ imgPosY=v; });
-bindSlider('custSizeRange','custSizeVal',function(v){ return v+'mm'; }, function(v){ custSize=v; });
-
-document.getElementById('prodInput').addEventListener('input',function(e){ vals.prod=e.target.value; renderPreview(); });
-document.getElementById('regiaInput').addEventListener('input',function(e){ vals.regia=e.target.value; renderPreview(); });
-document.getElementById('dopInput').addEventListener('input',function(e){ vals.dop=e.target.value; renderPreview(); });
-document.getElementById('custColorInput').addEventListener('input',function(e){ custColor=e.target.value; renderPreview(); });
-document.getElementById('custFontSel').addEventListener('change',function(e){ custFontKey=e.target.value; renderPreview(); });
-
-var rt; window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(renderPreview,80); });
-
-/* ══════════════════════════════════════════════
-   INIT
-   ══════════════════════════════════════════════ */
-syncFrameline();
-renderPreview();
-</script>
-</body>
-</html>
+bindSlider('fontSizeRange','fontSizeVal', function(v){ fontScale=2+(v/100)*2.25; });
+bindSli
