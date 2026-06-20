@@ -814,4 +814,24 @@ function bindSlider(rangeId,valId,fn){
   out.addEventListener('input',function(){ sync(Number(out.value)); });
 }
 bindSlider('fontSizeRange','fontSizeVal', function(v){ fontScale=2+(v/100)*2.25; });
-bindSli
+bindSlider('zoomRange','zoomVal', function(v){ imgZoom=v/100; });
+bindSlider('posXRange','posXVal', function(v){ imgPosX=v; });
+bindSlider('posYRange','posYVal', function(v){ imgPosY=v; });
+bindSlider('custSizeRange','custSizeVal', function(v){ custSize=v; });
+
+document.getElementById('prodInput').addEventListener('input',function(e){ vals.prod=e.target.value; renderPreview(); });
+document.getElementById('regiaInput').addEventListener('input',function(e){ vals.regia=e.target.value; renderPreview(); });
+document.getElementById('dopInput').addEventListener('input',function(e){ vals.dop=e.target.value; renderPreview(); });
+document.getElementById('custColorInput').addEventListener('input',function(e){ custColor=e.target.value; renderPreview(); });
+document.getElementById('custFontSel').addEventListener('change',function(e){ custFontKey=e.target.value; renderPreview(); });
+
+var rt; window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(renderPreview,80); });
+
+/* ══════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════ */
+syncFrameline();
+renderPreview();
+</script>
+</body>
+</html>
